@@ -1,0 +1,35 @@
+version: "3.8"
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "100k"
+    max-file: "1"
+
+networks:
+  shared-services:
+    external: true
+
+services:
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ufop
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: dfssiehfieufgh3478357
+    volumes:
+      - ./init-db:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+  streamlit:
+    build:
+      context: ./streamlit
+      dockerfile: Dockerfile
+    container_name: streamlit_app
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./streamlit:/app
+    command: streamlit run main.py
