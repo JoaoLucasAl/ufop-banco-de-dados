@@ -29,6 +29,7 @@ CREATE TABLE "Docente" (
     "dataNascimento" TIMESTAMP(3) NOT NULL,
     "dataAdmissão" TIMESTAMP(3) NOT NULL,
     "departamentoNome" VARCHAR(100) NOT NULL,
+    "membroDoProjetoId" INTEGER,
 
     CONSTRAINT "Docente_pkey" PRIMARY KEY ("código")
 );
@@ -64,6 +65,7 @@ CREATE TABLE "Discente" (
     "sexo" "Sexo" NOT NULL,
     "dataNascimento" TIMESTAMP(3) NOT NULL,
     "cursoCódigo" VARCHAR(10) NOT NULL,
+    "membroDoProjetoId" INTEGER,
 
     CONSTRAINT "Discente_pkey" PRIMARY KEY ("matrícula")
 );
@@ -77,43 +79,47 @@ CREATE TABLE "Projeto" (
 );
 
 CREATE TABLE "Extensão" (
-    "id" INTEGER NOT NULL,
-    "áreaDePesquisa" VARCHAR(100) NOT NULL,
+    "id" SERIAL NOT NULL,
 
     CONSTRAINT "Extensão_pkey" PRIMARY KEY ("id")
 );
 
+CREATE TABLE "AreaDePesquisa" (
+    "id" SERIAL NOT NULL,
+    "descrição" VARCHAR(200) NOT NULL,
+    "extensãoId" INTEGER NOT NULL,
+
+    CONSTRAINT "AreaDePesquisa_pkey" PRIMARY KEY ("id")
+);
+
 CREATE TABLE "Pesquisa" (
-    "id" INTEGER NOT NULL,
-    "objetivo" VARCHAR(100) NOT NULL,
+    "id" SERIAL NOT NULL,
 
     CONSTRAINT "Pesquisa_pkey" PRIMARY KEY ("id")
 );
 
-CREATE TABLE "MembroDoProjeto" (
-    "id"      SERIAL       NOT NULL,
-    "docenteId"     TEXT         NULL,
-    "discenteId"    VARCHAR(50)  NULL,
-    "cargaHoraria"  SMALLINT     NOT NULL,
-    "função"        VARCHAR(50)  NOT NULL,
-    "projetoCódigo" INTEGER      NOT NULL,
-    
-    CONSTRAINT "MembroDoProjeto_pkey" PRIMARY KEY ("id"),
+CREATE TABLE "Objetivo" (
+    "id" SERIAL NOT NULL,
+    "descrição" VARCHAR(200) NOT NULL,
+    "pesquisaId" INTEGER NOT NULL,
 
-    -- Garante que somente um dos campos (docente ou discente) seja preenchido
-    CONSTRAINT "chk_docente_ou_discente"
-      CHECK (
-        ("docenteId"  IS NOT NULL AND "discenteId"  IS NULL)
-        OR
-        ("docenteId"  IS NULL     AND "discenteId"  IS NOT NULL)
-      )
+    CONSTRAINT "Objetivo_pkey" PRIMARY KEY ("id")
+);
+
+CREATE TABLE "MembroDoProjeto" (
+    "id" SERIAL NOT NULL,
+    "cargaHoraria" SMALLINT NOT NULL,
+    "função" VARCHAR(50) NOT NULL,
+    "projetoCódigo" INTEGER NOT NULL,
+
+    CONSTRAINT "MembroDoProjeto_pkey" PRIMARY KEY ("id")
 );
 
 CREATE TABLE "Bolsa" (
     "valor" SMALLINT NOT NULL,
     "dataInicio" TIMESTAMP(3) NOT NULL,
     "dataFim" TIMESTAMP(3) NOT NULL,
-    "bolsistaId" SERIAL NOT NULL,
+    "bolsistaId" INTEGER NOT NULL,
     "projetoCódigo" INTEGER NOT NULL,
 
     CONSTRAINT "Bolsa_pkey" PRIMARY KEY ("bolsistaId","projetoCódigo","dataInicio")
@@ -190,15 +196,23 @@ CREATE TABLE "DocenteMinistraEmTurma" (
     CONSTRAINT "DocenteMinistraEmTurma_pkey" PRIMARY KEY ("disciplinaNome","número","anoSemestre","código")
 );
 
+CREATE UNIQUE INDEX "Docente_membroDoProjetoId_key" ON "Docente"("membroDoProjetoId");
+
 CREATE UNIQUE INDEX "Curso_nome_key" ON "Curso"("nome");
 
 CREATE UNIQUE INDEX "Curso_departamentoNome_key" ON "Curso"("departamentoNome");
 
-CREATE UNIQUE INDEX "Bolsa_bolsistaId_key" ON "Bolsa"("bolsistaId");
+CREATE UNIQUE INDEX "Discente_membroDoProjetoId_key" ON "Discente"("membroDoProjetoId");
+
+CREATE UNIQUE INDEX "AreaDePesquisa_extensãoId_key" ON "AreaDePesquisa"("extensãoId");
+
+CREATE UNIQUE INDEX "Objetivo_pesquisaId_key" ON "Objetivo"("pesquisaId");
 
 ALTER TABLE "Equipamento" ADD CONSTRAINT "Equipamento_laboratórioId_fkey" FOREIGN KEY ("laboratórioId") REFERENCES "Laboratório"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 ALTER TABLE "Docente" ADD CONSTRAINT "Docente_departamentoNome_fkey" FOREIGN KEY ("departamentoNome") REFERENCES "Departamento"("nome") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+ALTER TABLE "Docente" ADD CONSTRAINT "Docente_membroDoProjetoId_fkey" FOREIGN KEY ("membroDoProjetoId") REFERENCES "MembroDoProjeto"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 ALTER TABLE "DocenteResponsávelPorLaboratório" ADD CONSTRAINT "DocenteResponsávelPorLaboratório_docenteCódigo_fkey" FOREIGN KEY ("docenteCódigo") REFERENCES "Docente"("código") ON DELETE RESTRICT ON UPDATE CASCADE;
 
@@ -208,15 +222,17 @@ ALTER TABLE "Curso" ADD CONSTRAINT "Curso_departamentoNome_fkey" FOREIGN KEY ("d
 
 ALTER TABLE "Discente" ADD CONSTRAINT "Discente_cursoCódigo_fkey" FOREIGN KEY ("cursoCódigo") REFERENCES "Curso"("código") ON DELETE RESTRICT ON UPDATE CASCADE;
 
+ALTER TABLE "Discente" ADD CONSTRAINT "Discente_membroDoProjetoId_fkey" FOREIGN KEY ("membroDoProjetoId") REFERENCES "MembroDoProjeto"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
 ALTER TABLE "Projeto" ADD CONSTRAINT "Projeto_departamentoNome_fkey" FOREIGN KEY ("departamentoNome") REFERENCES "Departamento"("nome") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 ALTER TABLE "Extensão" ADD CONSTRAINT "Extensão_id_fkey" FOREIGN KEY ("id") REFERENCES "Projeto"("código") ON DELETE RESTRICT ON UPDATE CASCADE;
 
+ALTER TABLE "AreaDePesquisa" ADD CONSTRAINT "AreaDePesquisa_extensãoId_fkey" FOREIGN KEY ("extensãoId") REFERENCES "Extensão"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
 ALTER TABLE "Pesquisa" ADD CONSTRAINT "Pesquisa_id_fkey" FOREIGN KEY ("id") REFERENCES "Projeto"("código") ON DELETE RESTRICT ON UPDATE CASCADE;
 
-ALTER TABLE "MembroDoProjeto" ADD CONSTRAINT "MembroDoProjeto_docente_fkey" FOREIGN KEY ("docenteId") REFERENCES "Docente"("código") ON DELETE RESTRICT ON UPDATE CASCADE;
-
-ALTER TABLE "MembroDoProjeto" ADD CONSTRAINT "MembroDoProjeto_discente_fkey" FOREIGN KEY ("discenteId") REFERENCES "Discente"("matrícula") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Objetivo" ADD CONSTRAINT "Objetivo_pesquisaId_fkey" FOREIGN KEY ("pesquisaId") REFERENCES "Pesquisa"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 ALTER TABLE "MembroDoProjeto" ADD CONSTRAINT "MembroDoProjeto_projetoCódigo_fkey" FOREIGN KEY ("projetoCódigo") REFERENCES "Projeto"("código") ON DELETE RESTRICT ON UPDATE CASCADE;
 
@@ -258,11 +274,11 @@ VALUES
 ('MAT1',  'Licenciatura em Matemática',           40, 'Matemática'),
 ('FIS1',  'Bacharelado em Física',                35, 'Física');
 
-INSERT INTO "Laboratório" ("id", "nome", "sala", "prédio")
+INSERT INTO "Laboratório" ("nome", "sala", "prédio")
 VALUES
-(1, 'LabComp1', 101, 'Prédio de Computação'),
-(2, 'LabMat1',  201, 'Prédio de Matemática'),
-(3, 'LabFis1',  301, 'Prédio de Física');
+('LabComp1', 101, 'Prédio de Computação'),
+('LabMat1',  201, 'Prédio de Matemática'),
+('LabFis1',  301, 'Prédio de Física');
 
 INSERT INTO "Equipamento" ("nModelo", "nome", "fabricante", "laboratórioId")
 VALUES
@@ -352,39 +368,49 @@ VALUES
 ('Mecânica',           1, '2025.1', 'D003');
 
 INSERT INTO "Projeto"
-("código", "nome", "departamentoNome")
+("nome", "departamentoNome")
 VALUES
-(1, 'Projeto Computação', 'Computação'),
-(2, 'Projeto Matemática', 'Matemática'),
-(3, 'Projeto Física',     'Física');
+('Projeto Computação', 'Computação'),
+('Projeto Matemática', 'Matemática'),
+('Projeto Física',     'Física');
 
 INSERT INTO "Extensão"
-("id", "áreaDePesquisa")
+("id")
 VALUES
-(1, 'Inteligência Artificial'),
-(2, 'Educação Matemática'),
-(3, 'Astrofísica');
+(1),
+(2),
+(3);
+
+INSERT INTO "AreaDePesquisa"
+("descrição", "extensãoId")
+VALUES
+('Inteligência Artificial', 1),
+('Educação Matemática', 2),
+('Astrofísica', 3);
 
 INSERT INTO "Pesquisa"
-("id", "objetivo")
+("id")
 VALUES
-(1, 'Pesquisas em IA'),
-(2, 'Pesquisas em métodos de ensino'),
-(3, 'Pesquisas em mecânica quântica');
+(1),
+(2),
+(3);
+
+INSERT INTO "Objetivo"
+("descrição", "pesquisaId")
+VALUES
+('Pesquisas em IA', 1),
+('Pesquisas em métodos de ensino', 2),
+('Pesquisas em mecânica quântica', 3);
 
 INSERT INTO "MembroDoProjeto"
-("discenteId", "cargaHoraria", "função", "projetoCódigo")
+( "cargaHoraria", "função", "projetoCódigo")
 VALUES
-('S001', 10, 'Pesquisador', 1),
-('S002', 10, 'Pesquisador', 2),
-('S003', 10, 'Pesquisador', 3);
-
-INSERT INTO "MembroDoProjeto"
-("docenteId", "cargaHoraria", "função", "projetoCódigo")
-VALUES
-('D001', 12, 'Orientador', 1),
-('D002', 12, 'Orientador', 2),
-('D003', 12, 'Orientador', 3);
+(12, 'Orientador', 1),
+(12, 'Orientador', 2),
+(12, 'Orientador', 3),
+(10, 'Pesquisador', 1),
+(10, 'Pesquisador', 2),
+(10, 'Pesquisador', 3);
 
 INSERT INTO "Bolsa"
 ("valor", "dataInicio", "dataFim", "bolsistaId", "projetoCódigo")

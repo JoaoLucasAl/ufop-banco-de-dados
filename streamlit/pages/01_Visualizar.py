@@ -2,10 +2,6 @@ import streamlit as st
 import psycopg2
 import pandas as pd
 
-# ------------------------------------------------------------------------------
-# Funções auxiliares
-# ------------------------------------------------------------------------------
-
 def get_tables(conn):
     """
     Retorna lista de nomes de tabelas do esquema público.
@@ -126,7 +122,7 @@ def visualizar():
     # ---------------------------------------------------------------
     # Ajuste com as credenciais do seu PostgreSQL (host, dbname, user, password)
     conn = psycopg2.connect(
-        host="localhost",
+        host="postgres",
         dbname="ufop",
         user="root",
         password="dfssiehfieufgh3478357",
@@ -194,7 +190,7 @@ def visualizar():
 
     # Fechar conexão
     conn.close()
-
+    
 def main():
     visualizar()
 

@@ -3,9 +3,7 @@ import psycopg2
 import pandas as pd
 from psycopg2.extras import RealDictCursor
 
-# ------------------------------------------------------------------------------
-# Funções auxiliares
-# ------------------------------------------------------------------------------
+
 def get_tables(conn):
     """
     Retorna lista de tabelas do schema público.
@@ -71,10 +69,24 @@ def load_table_data(conn, table_name, pk_cols):
     Carrega dados da tabela (select *), em formato de dicionário (RealDictCursor)
     para facilitar a manipulação. Retorna uma lista de dicts.
     """
+    from psycopg2.extras import RealDictCursor
+    
+    # Monta o ORDER BY com aspas nas colunas:
+    # ex.: ORDER BY "nTombamento", "nome" ...
+    order_by_cols = ", ".join(f'"{col}"' for col in pk_cols)
+
+    query = f"""
+        SELECT * 
+        FROM "{table_name}" 
+        ORDER BY {order_by_cols} 
+        LIMIT 200;
+    """
+
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
-        cur.execute(f'SELECT * FROM "{table_name}" ORDER BY {", ".join(pk_cols)} LIMIT 200;')
+        cur.execute(query)
         rows = cur.fetchall()
     return rows
+
 
 
 def build_insert_statement(table_name, columns):
@@ -141,7 +153,7 @@ def editar_inserir():
 
     # Conexão com o DB - ajuste suas credenciais
     conn = psycopg2.connect(
-        host="localhost",
+        host="postgres",
         dbname="ufop",
         user="root",
         password="dfssiehfieufgh3478357",

@@ -23,6 +23,8 @@ services:
       - ./init-db:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432"
+    networks:
+      - shared-services
   streamlit:
     build:
       context: ./streamlit
@@ -33,3 +35,5 @@ services:
     volumes:
       - ./streamlit:/app
     command: streamlit run main.py
+    networks:
+      - shared-services
